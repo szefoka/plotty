@@ -12,7 +12,7 @@ from pylab import xticks
 import sys
 import os
 import math
-
+import copy as cp
 
 class Data:
 	def __init__ (self, vals, legend):
@@ -27,8 +27,8 @@ class CDF:
 		self.counts = []
 		self.cdf = []
 	
-	def CalcCDF (self, bins):
-		num_bins = int(len(self.vals)/10)
+	def CalcCDF (self):
+		num_bins = int(len(self.data.vals)/10)
 		self.counts, self.bin_edges = np.histogram(self.data.vals, bins=num_bins, normed=False)
 		self.cdf = np.cumsum(self.counts)
 		#calculating range of X axis
@@ -36,7 +36,7 @@ class CDF:
 
 		newList = []
 		for item in self.cdf.tolist():
-			newList.append(float(item)/len(self.vals))
+			newList.append(float(item)/len(self.data.vals))
 
 		self.cdf = newList
 		self.cdf.insert(0,0)
@@ -44,19 +44,20 @@ class CDF:
 class CDFPloft:
 	def __init__(self, datas, legends):
 		self.cdfs = []
-		for f in datas:
-			cdf = CDF(datas, legends)
-			cdf.CalcCDF
+		for data in zip(datas, legends):
+			cdf = CDF(data[0], data[1])
+			cdf.CalcCDF()
 			self.cdfs.append(cdf)
 	
-	def DrawCDF ():
+	def DrawCDF (self):
 		plot_num = 111
 		i = 0
 		for item in self.cdfs:
 			plt.subplot(plot_num)
-			plt.semilogx(item.bin_edges, item.cdf, label=item.title)
+			plt.semilogx(item.bin_edges, item.cdf, label=item.data.legend)
 			plt.xticks(fontsize=8)
 			plt.grid(True)
+			pylab.legend(loc="upper right", fancybox=True, shadow=True, fontsize=8)
 			i+=1
 			plt.savefig("cdf.jpg", dpi=800)
 
@@ -89,18 +90,22 @@ class InputRow:
 
 class Window:
 	def __init__ (self):
+		self.datas = []
+		self.legends = []
 		self.rows = 0;
 		self.inputlist = []
 		self._window = QDialog()
 		self._window.setWindowTitle("Plotty")
 		windowLayout = QVBoxLayout()
 		self.layout = QGridLayout()
+		
+		self.CDF = QCheckBox(self._window)
+		self.Hist = QCheckBox(self._window)
+		self.Perc = QCheckBox(self._window)
+		
 		self.createLayout()
 		windowLayout.addWidget(self._window.horizontalGroupBox)
 		self._window.setLayout(windowLayout)
-		self.CDF = None
-		self.Hist = None
-		self.Perc = None
 			
 	@pyqtSlot()	
 	def createLayout (self):
@@ -109,9 +114,6 @@ class Window:
 		#add widgets		
 		addBtn = QPushButton('New')
 		createBtn = QPushButton('Create')
-		self.CDF = QCheckBox(self._window)
-		self.Hist = QCheckBox(self._window)
-		self.Perc = QCheckBox(self._window)
 		cdfLabel = QLabel("CDF")
 		histLabel = QLabel("Hist")
 		percLabel = QLabel("Perc")		
@@ -140,33 +142,33 @@ class Window:
 		self.rows += 1
 		row = InputRow(self._window)
 		self.inputlist.append(row)
-		#row.fn.setText(QFileDialog.getOpenFileName('Open File', '/'))
 		self.layout.addWidget(row.fnLabel, self.rows, 0)
 		self.layout.addWidget(row.fn, self.rows, 1)
 		self.layout.addWidget(row.descLabel, self.rows, 2)
 		self.layout.addWidget(row.text, self.rows, 3)
 		self.layout.addWidget(row.modButton, self.rows, 4)
-		#for i in range(self.layout.count()):
-		#	print type(self.layout.itemAt(i))
 	
 	@pyqtSlot()
 	def createPlot (self):
-		datas = []
-		legends = []
+		self.datas[:] = []
+		self.legends[:] = []
 		for item in self.inputlist:
 			raw_data = []
 			data = []
-			with open (item.fn.text()) as f:
+			with open (str(item.fn.text())) as f:
 				raw_data = f.readlines()
 			for val in raw_data:
 				try:
 					data.append(float(val))
 				except:
 					pass
-			datas.append(data)
-			legends.append(item.description.text())
-		print legends
+			self.legends.append(cp.deepcopy(str(item.text.text())))
+			self.datas.append(cp.deepcopy(data))
+			data[:]=[]
 			
+		if self.CDF.isChecked():
+			cdfPlot = CDFPloft(self.datas, self.legends)
+			cdfPlot.DrawCDF()
 	
 
 a = QApplication(sys.argv)
