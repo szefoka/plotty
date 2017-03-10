@@ -31,7 +31,6 @@ class CDF:
 		num_bins = int(len(self.data.vals)/10)
 		self.counts, self.bin_edges = np.histogram(self.data.vals, bins=num_bins, normed=False)
 		self.cdf = np.cumsum(self.counts)
-		#calculating range of X axis
 		tmp = self.cdf.tolist()
 
 		newList = []
@@ -51,6 +50,7 @@ class CDFPloft:
 	
 	def DrawCDF (self):
 		plot_num = 111
+		plt.figure(1)
 		i = 0
 		for item in self.cdfs:
 			plt.subplot(plot_num)
@@ -62,8 +62,43 @@ class CDFPloft:
 			plt.savefig("cdf.jpg", dpi=800)
 
 
-#class Percentile:
+class Percentile:
+	def __init__ (self, vals, legend):
+		self.data = Data(vals, legend)
+		self.percentiles = [10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 99, 99.9, 99.99, 99.999]
+		self.results = []
+		
+	def calcPercentiles (self):
+		tmp_vals = self.data.vals
+		tmp_vals.sort()
+		my_vals = np.array(tmp_vals)
+		for p in self.percentiles:
+			self.results.append(np.percentile(my_vals, p))
+		self.results.append(max(tmp_vals))
+
+class PercentilePlot:
+	def __init__ (self, datas, legends):
+		self.percentiles = []
+		for data in zip(datas, legends):
+			perc = Percentile(data[0], data[1])
+			perc.calcPercentiles()
+			self.percentiles.append(perc)
 	
+	def DrawPercentiles (self):
+		plot_num = 111
+		plt.figure(2)
+		for item in self.percentiles:
+			plt.subplot(plot_num)
+			item.percentiles.append(1)
+			plt.plot(range(0, len(item.results)), item.results, label=item.data.legend)
+			xticks = []
+			for tick in item.percentiles:
+				xticks.append(str(tick))
+			xticks[-1]="max"
+			plt.xticks(range(0, len(xticks)), xticks ,fontsize=8)
+		pylab.legend(loc="upper left", fancybox=True, shadow=True, fontsize=7)
+		plt.grid(True)
+		plt.savefig("percentiles.jpg", dpi=800)
 	
 #class Histogram:
 	
@@ -169,6 +204,10 @@ class Window:
 		if self.CDF.isChecked():
 			cdfPlot = CDFPloft(self.datas, self.legends)
 			cdfPlot.DrawCDF()
+			
+		if self.Perc.isChecked():
+			percPlot = PercentilePlot(self.datas, self.legends)
+			percPlot.DrawPercentiles()
 	
 
 a = QApplication(sys.argv)
