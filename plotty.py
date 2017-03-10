@@ -48,9 +48,12 @@ class CDFPloft:
 			cdf.CalcCDF()
 			self.cdfs.append(cdf)
 	
-	def DrawCDF (self):
+	def DrawCDF (self, fn, title, xlabel, ylabel):
 		plot_num = 111
 		plt.figure(1)
+		plt.title(title)
+		plt.xlabel(xlabel)
+		plt.ylabel(ylabel)
 		i = 0
 		for item in self.cdfs:
 			plt.subplot(plot_num)
@@ -59,7 +62,7 @@ class CDFPloft:
 			plt.grid(True)
 			pylab.legend(loc="upper right", fancybox=True, shadow=True, fontsize=8)
 			i+=1
-			plt.savefig("cdf.jpg", dpi=800)
+			plt.savefig(fn + "_cdf.jpg", dpi=800)
 
 
 class Percentile:
@@ -84,9 +87,12 @@ class PercentilePlot:
 			perc.calcPercentiles()
 			self.percentiles.append(perc)
 	
-	def DrawPercentiles (self):
+	def DrawPercentiles (self, fn, title, xlabel, ylabel):
 		plot_num = 111
 		plt.figure(2)
+		plt.title(title)
+		plt.xlabel(xlabel)
+		plt.ylabel(ylabel)
 		for item in self.percentiles:
 			plt.subplot(plot_num)
 			item.percentiles.append(1)
@@ -98,7 +104,7 @@ class PercentilePlot:
 			plt.xticks(range(0, len(xticks)), xticks ,fontsize=8)
 		pylab.legend(loc="upper left", fancybox=True, shadow=True, fontsize=7)
 		plt.grid(True)
-		plt.savefig("percentiles.jpg", dpi=800)
+		plt.savefig(fn + "_percentiles.jpg", dpi=800)
 	
 #class Histogram:
 	
@@ -127,7 +133,7 @@ class Window:
 	def __init__ (self):
 		self.datas = []
 		self.legends = []
-		self.rows = 0;
+		self.rows = 3;
 		self.inputlist = []
 		self._window = QDialog()
 		self._window.setWindowTitle("Plotty")
@@ -137,6 +143,25 @@ class Window:
 		self.CDF = QCheckBox(self._window)
 		self.Hist = QCheckBox(self._window)
 		self.Perc = QCheckBox(self._window)
+		self.fileName = QLineEdit(self._window)
+		self.fileName.setFixedWidth(200)
+		
+		self.titleText = QLineEdit(self._window)
+		self.titleText.setFixedWidth(200)
+		self.CDFXLabelText = QLineEdit(self._window)
+		self.CDFXLabelText.setFixedWidth(200)
+		self.CDFYLabelText = QLineEdit(self._window)
+		self.CDFYLabelText.setFixedWidth(200)
+		
+		self.HistXLabelText = QLineEdit(self._window)
+		self.HistXLabelText.setFixedWidth(200)
+		self.HistYLabelText = QLineEdit(self._window)
+		self.HistYLabelText.setFixedWidth(200)
+		
+		self.PercXLabelText = QLineEdit(self._window)
+		self.PercXLabelText.setFixedWidth(200)
+		self.PercYLabelText = QLineEdit(self._window)
+		self.PercYLabelText.setFixedWidth(200)
 		
 		self.createLayout()
 		windowLayout.addWidget(self._window.horizontalGroupBox)
@@ -149,19 +174,41 @@ class Window:
 		#add widgets		
 		addBtn = QPushButton('New')
 		createBtn = QPushButton('Create')
-		cdfLabel = QLabel("CDF")
-		histLabel = QLabel("Hist")
-		percLabel = QLabel("Perc")		
+		
+		#first row
 		self.layout.addWidget(addBtn,0,0) 
 		self.layout.addWidget(createBtn,0,1) 
-		self.layout.addWidget(createBtn,0,1) 
-		self.layout.addWidget(cdfLabel,0,2)
-		self.layout.addWidget(self.CDF,0,3)
-		self.layout.addWidget(histLabel,0,4)
-		self.layout.addWidget(self.Hist,0,5)
-		self.layout.addWidget(percLabel,0,6)
-		self.layout.addWidget(self.Perc,0,7)
-
+		#self.layout.addWidget(createBtn,0,1) 
+		self.layout.addWidget(QLabel("Filename: "), 0, 2)
+		self.layout.addWidget(self.fileName, 0, 3)
+		self.layout.addWidget(QLabel("Title: "), 0, 4)
+		self.layout.addWidget(self.titleText, 0, 5)
+		
+		#second row for CDF
+		self.layout.addWidget(QLabel("CDF"),1,0)
+		self.layout.addWidget(self.CDF,1,1)
+		self.layout.addWidget(QLabel("X label: "), 1, 2)
+		self.layout.addWidget(self.CDFXLabelText, 1, 3)
+		self.layout.addWidget(QLabel("Y label: "), 1, 4)
+		self.layout.addWidget(self.CDFYLabelText, 1, 5)
+		
+		#third row for Histogram
+		self.layout.addWidget(QLabel("Hist"),2,0)
+		self.layout.addWidget(self.Hist,2,1)
+		self.layout.addWidget(QLabel("X label: "), 2, 2)
+		self.layout.addWidget(self.HistXLabelText, 2, 3)
+		self.layout.addWidget(QLabel("Y label: "), 2, 4)
+		self.layout.addWidget(self.HistYLabelText, 2, 5)
+		
+		#fourth row for Percentiles
+		self.layout.addWidget(QLabel("Perc"),3,0)
+		self.layout.addWidget(self.Perc,3,1)
+		self.layout.addWidget(QLabel("X label: "), 3, 2)
+		self.layout.addWidget(self.PercXLabelText, 3, 3)
+		self.layout.addWidget(QLabel("Y label: "), 3, 4)
+		self.layout.addWidget(self.PercYLabelText, 3, 5)
+		
+		#button events
 		addBtn.clicked.connect(self.addNewRow)
 		createBtn.clicked.connect(self.createPlot)
 		
@@ -203,11 +250,17 @@ class Window:
 			
 		if self.CDF.isChecked():
 			cdfPlot = CDFPloft(self.datas, self.legends)
-			cdfPlot.DrawCDF()
+			cdfPlot.DrawCDF(str(self.fileName.text()),
+							str(self.titleText.text()),
+							str(self.CDFXLabelText.text()),
+							str(self.CDFYLabelText.text()))
 			
 		if self.Perc.isChecked():
 			percPlot = PercentilePlot(self.datas, self.legends)
-			percPlot.DrawPercentiles()
+			percPlot.DrawPercentiles(str(self.fileName.text()),
+									 str(self.titleText.text()),
+									 str(self.PercXLabelText.text()),
+									 str(self.PercYLabelText.text()))
 	
 
 a = QApplication(sys.argv)
