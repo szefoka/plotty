@@ -12,7 +12,6 @@ from pylab import xticks
 import sys
 import os
 import math
-import copy as cp
 
 class Data:
 	def __init__ (self, vals, legend):
@@ -41,19 +40,24 @@ class CDF:
 		self.cdf.insert(0,0)
 		
 class CDFPloft:
-	def __init__(self, datas, legends):
+	def __init__(self, datas, legends, filename, title, xlabel, ylabel):
+		self.fn = filename
+		self.title = title
+		self.xlabel = xlabel
+		self.ylabel = ylabel
 		self.cdfs = []
 		for data in zip(datas, legends):
 			cdf = CDF(data[0], data[1])
 			cdf.CalcCDF()
 			self.cdfs.append(cdf)
 	
-	def DrawCDF (self, fn, title, xlabel, ylabel):
+	def DrawCDF (self):
+		plt.gcf().clear()
 		plot_num = 111
 		plt.figure(1)
-		plt.title(title)
-		plt.xlabel(xlabel)
-		plt.ylabel(ylabel)
+		plt.title(self.title)
+		plt.xlabel(self.xlabel)
+		plt.ylabel(self.ylabel)
 		i = 0
 		for item in self.cdfs:
 			plt.subplot(plot_num)
@@ -62,7 +66,7 @@ class CDFPloft:
 			plt.grid(True)
 			pylab.legend(loc="upper right", fancybox=True, shadow=True, fontsize=8)
 			i+=1
-			plt.savefig(fn + "_cdf.jpg", dpi=800)
+			plt.savefig(self.fn + "_cdf.jpg", dpi=800)
 
 
 class Percentile:
@@ -80,19 +84,24 @@ class Percentile:
 		self.results.append(max(tmp_vals))
 
 class PercentilePlot:
-	def __init__ (self, datas, legends):
+	def __init__ (self, datas, legends, filename, title, xlabel, ylabel):
 		self.percentiles = []
 		for data in zip(datas, legends):
 			perc = Percentile(data[0], data[1])
 			perc.calcPercentiles()
 			self.percentiles.append(perc)
+			self.fn = filename
+			self.title = title
+			self.xlabel = xlabel
+			self.ylabel = ylabel
 	
-	def DrawPercentiles (self, fn, title, xlabel, ylabel):
+	def DrawPercentiles (self):
+		plt.gcf().clear()
 		plot_num = 111
 		plt.figure(2)
-		plt.title(title)
-		plt.xlabel(xlabel)
-		plt.ylabel(ylabel)
+		plt.title(self.title)
+		plt.xlabel(self.xlabel)
+		plt.ylabel(self.ylabel)
 		for item in self.percentiles:
 			plt.subplot(plot_num)
 			item.percentiles.append(1)
@@ -104,7 +113,7 @@ class PercentilePlot:
 			plt.xticks(range(0, len(xticks)), xticks ,fontsize=8)
 		pylab.legend(loc="upper left", fancybox=True, shadow=True, fontsize=7)
 		plt.grid(True)
-		plt.savefig(fn + "_percentiles.jpg", dpi=800)
+		plt.savefig(self.fn + "_percentiles.jpg", dpi=800)
 	
 #class Histogram:
 	
@@ -234,6 +243,7 @@ class Window:
 	def createPlot (self):
 		self.datas[:] = []
 		self.legends[:] = []
+		self.legends[:] = []
 		for item in self.inputlist:
 			raw_data = []
 			data = []
@@ -244,23 +254,26 @@ class Window:
 					data.append(float(val))
 				except:
 					pass
-			self.legends.append(cp.deepcopy(str(item.text.text())))
-			self.datas.append(cp.deepcopy(data))
-			data[:]=[]
+			self.legends.append((str(item.text.text())))
+			self.datas.append((data))
 			
 		if self.CDF.isChecked():
-			cdfPlot = CDFPloft(self.datas, self.legends)
-			cdfPlot.DrawCDF(str(self.fileName.text()),
-							str(self.titleText.text()),
-							str(self.CDFXLabelText.text()),
-							str(self.CDFYLabelText.text()))
+			cdfPlot = CDFPloft(self.datas, 
+							   self.legends,
+							   str(self.fileName.text()),
+							   str(self.titleText.text()),
+							   str(self.CDFXLabelText.text()),
+							   str(self.CDFYLabelText.text()))
+			cdfPlot.DrawCDF()
 			
 		if self.Perc.isChecked():
-			percPlot = PercentilePlot(self.datas, self.legends)
-			percPlot.DrawPercentiles(str(self.fileName.text()),
-									 str(self.titleText.text()),
-									 str(self.PercXLabelText.text()),
-									 str(self.PercYLabelText.text()))
+			percPlot = PercentilePlot(self.datas,
+									  self.legends,
+									  str(self.fileName.text()),
+									  str(self.titleText.text()),
+									  str(self.PercXLabelText.text()),
+									  str(self.PercYLabelText.text()))
+			percPlot.DrawPercentiles()
 	
 
 a = QApplication(sys.argv)
