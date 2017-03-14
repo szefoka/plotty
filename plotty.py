@@ -85,15 +85,15 @@ class Percentile:
 
 class PercentilePlot:
 	def __init__ (self, datas, legends, filename, title, xlabel, ylabel):
+		self.fn = filename
+		self.title = title
+		self.xlabel = xlabel
+		self.ylabel = ylabel
 		self.percentiles = []
 		for data in zip(datas, legends):
 			perc = Percentile(data[0], data[1])
 			perc.calcPercentiles()
 			self.percentiles.append(perc)
-			self.fn = filename
-			self.title = title
-			self.xlabel = xlabel
-			self.ylabel = ylabel
 	
 	def DrawPercentiles (self):
 		plt.gcf().clear()
@@ -115,13 +115,69 @@ class PercentilePlot:
 		plt.grid(True)
 		plt.savefig(self.fn + "_percentiles.jpg", dpi=800)
 	
-#class Histogram:
+class Histogram:
+	def __init__ (self, vals, legend, bin_size):
+		self.data = Data(vals, legend)
+		self.center = 0
+		self.max_col = 0
+		self.bin_size = bin_size
 	
+	def calcHistogram (self):
+		nbins=range(0, len(self.data.vals), self.bin_size)
+		histvals = (np.histogram(self.data.vals, bins=nbins)[0])
+		self.center = nbins[histvals.tolist().index(max(histvals))]
+		self.max_col = max(histvals)
+        
+class HistogramPlot:
+	def __init__ (self, bin_size, datas, legends, filename, title, xlabel, ylabel):
+		self.fn = filename
+		self.title = title
+		self.xlabel = xlabel
+		self.ylabel = ylabel
+		self.hists =  []
+		for data in zip(datas, legends):
+			hist = Histogram(data[0], data[1], bin_size)
+			hist.calcHistogram()
+			self.hists.append(hist)
+			
+		self.center = 0
+		for item in self.hists:
+			if self.center < item.center:
+				self.center = item.center
+		self.max_y = 0
+		for item in self.hists:
+			if self.max_y < item.max_col:
+				self.max_y = item.max_col
+		#scaling magic
+		tens = len(str(self.max_y))-2
+		fives = 5 * 10**tens
+		mult = int(self.max_y / fives) + 1
+		self.max_y = mult * fives
 
-
+	def DrawHistogram (self):
+		plt.gcf().clear()
+		plot_num = len(self.hists)*100+10
+		plt.figure(3)
+		plt.title(self.title)
+		plt.xlabel(self.xlabel)
+		plt.ylabel(self.ylabel)
+		for item in self.hists:
+			plot_num += 1
+			plt.subplot(plot_num)
+			plt.hist(item.data.vals, bins=range(0, 2*self.center, item.bin_size), label=item.data.legend)
+			plt.xticks(fontsize=7)
+			y_ticks=np.arange(0, int(self.max_y), int(50*10**(len(str(self.max_y))-2)/2))
+			np.append(self.max_y, y_ticks)
+			y_ticks = y_ticks.tolist()
+			y_ticks.append(self.max_y)
+			#plt.yticks(y_ticks, fontsize=8)
+			pylab.legend(loc="upper right", fancybox=True, shadow=True, fontsize=7)
+			plt.grid(True)
+		plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+		plt.savefig(self.fn + "_hist.jpg", dpi=800)		
 
 class InputRow:
-	def __init__(self, window):
+	def __init__ (self, window):
 		self.window = window
 		self.fn = QLineEdit()
 		self.fn.setFixedWidth(200)
@@ -166,6 +222,8 @@ class Window:
 		self.HistXLabelText.setFixedWidth(200)
 		self.HistYLabelText = QLineEdit(self._window)
 		self.HistYLabelText.setFixedWidth(200)
+		self.HistBinSize = QLineEdit(self._window)
+		self.HistBinSize.setFixedWidth(50)
 		
 		self.PercXLabelText = QLineEdit(self._window)
 		self.PercXLabelText.setFixedWidth(200)
@@ -208,6 +266,8 @@ class Window:
 		self.layout.addWidget(self.HistXLabelText, 2, 3)
 		self.layout.addWidget(QLabel("Y label: "), 2, 4)
 		self.layout.addWidget(self.HistYLabelText, 2, 5)
+		self.layout.addWidget(QLabel("Bin size: "), 2, 6)
+		self.layout.addWidget(self.HistBinSize, 2, 7)
 		
 		#fourth row for Percentiles
 		self.layout.addWidget(QLabel("Perc"),3,0)
@@ -274,6 +334,16 @@ class Window:
 									  str(self.PercXLabelText.text()),
 									  str(self.PercYLabelText.text()))
 			percPlot.DrawPercentiles()
+		
+		if self.Hist.isChecked():
+			histPlot = HistogramPlot(int(self.HistBinSize.text()),
+									 self.datas,
+									 self.legends,
+									 str(self.fileName.text()),
+									 str(self.titleText.text()),
+									 str(self.HistXLabelText.text()),
+									 str(self.HistYLabelText.text()))
+			histPlot.DrawHistogram()
 	
 
 a = QApplication(sys.argv)
